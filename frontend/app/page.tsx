@@ -9,10 +9,10 @@ import {
   getCategories,
   getFeaturedJobPosts,
   getRecentPosts,
-  getSubcategoriesByCategory,
+  getSubcategories,
 } from "@/services/api";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 15;
 
 function formatTimeAgo(seconds: number): string {
   if (seconds < 60) return `${seconds} secs`;
@@ -23,23 +23,18 @@ function formatTimeAgo(seconds: number): string {
 }
 
 export default async function HomePage() {
-  const categories = await getCategories();
-  const [recentPostsResponse, featuredJobsResponse] = await Promise.all([
+  const [categories, allSubcategories, recentPostsResponse, featuredJobsResponse] = await Promise.all([
+    getCategories(),
+    getSubcategories(),
     getRecentPosts(50),
     getFeaturedJobPosts(3),
   ]);
 
-  const pairs = await Promise.all(
-    categories.map(async (category) => ({
-      categoryID: category.id,
-      subcategories: await getSubcategoriesByCategory(category.id),
-    })),
-  );
-
-  const subcategoriesByCategory = pairs.reduce<
-    Record<number, (typeof pairs)[number]["subcategories"]>
-  >((acc, row) => {
-    acc[row.categoryID] = row.subcategories;
+  const subcategoriesByCategory = allSubcategories.reduce<Record<number, typeof allSubcategories>>((acc, row) => {
+    if (!acc[row.category_id]) {
+      acc[row.category_id] = [];
+    }
+    acc[row.category_id].push(row);
     return acc;
   }, {});
 

@@ -1,4 +1,5 @@
 import { CategorySection } from "@/components/category_section";
+import { getCategoryIconClass } from "@/util/category-class";
 import type { Category, Subcategory } from "@/types/marketplace";
 
 type LeftSidebarProps = {
@@ -36,7 +37,7 @@ export function LeftSidebar({
                 </div>
                 {categories.map((category) => (
                   <div key={category.id} className="classifiedsOverviewRow">
-                    <div className="classifiedsOverviewTitle">
+                    <div className={`classifiedsOverviewTitle ${getCategoryIconClass(category.short_name)}`}>
                       <a href={`/search/cat/${category.id}`}>
                         {category.short_name}
                       </a>

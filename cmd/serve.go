@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Capmus-Team/supost-cli-mark/internal/adapters"
 	"github.com/Capmus-Team/supost-cli-mark/internal/config"
 	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 	"github.com/Capmus-Team/supost-cli-mark/internal/repository"
@@ -62,7 +63,11 @@ endpoints. This is for prototyping only and powers frontend integration.`,
 			}()
 		}
 
-		marketSvc := service.NewMarketplaceService(marketRepo)
+		var emailSender adapters.EmailSender
+		if cfg.MailgunAPIKey != "" && cfg.MailgunDomain != "" && cfg.MailgunFrom != "" {
+			emailSender = adapters.NewMailgunSender(cfg.MailgunAPIKey, cfg.MailgunDomain, cfg.MailgunFrom)
+		}
+		marketSvc := service.NewMarketplaceService(marketRepo, emailSender)
 
 		mux := http.NewServeMux()
 		registerHandlers(mux, marketSvc)
@@ -73,7 +78,7 @@ endpoints. This is for prototyping only and powers frontend integration.`,
 		logger := slog.New(slog.NewTextHandler(cmd.ErrOrStderr(), nil))
 		logger.Info("preview server started",
 			"addr", "http://localhost"+addr,
-			"routes", "/api/health,/api/categories,/api/subcategories,/api/posts",
+			"routes", "/api/health,/api/categories,/api/subcategories,/api/posts,/api/posts/{id},/api/posts/{id}/messages",
 		)
 		return http.ListenAndServe(addr, handler)
 	},
@@ -138,6 +143,101 @@ func registerHandlers(mux *http.ServeMux, marketSvc *service.MarketplaceService)
 				"offset": filter.Offset,
 			},
 		})
+	})
+
+	mux.HandleFunc("GET /api/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil || id <= 0 {
+			writeValidationError(w, "post id must be a positive integer")
+			return
+		}
+
+		post, err := marketSvc.GetPost(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, domain.ErrValidation) {
+				writeValidationError(w, err.Error())
+				return
+			}
+			writeInternalError(w)
+			return
+		}
+		if post == nil {
+			writeJSON(w, http.StatusNotFound, errorEnvelope{
+				Error: apiError{
+					Code:    "not_found",
+					Message: "post not found",
+				},
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{"data": post})
+	})
+
+	mux.HandleFunc("POST /api/posts/{id}/messages", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		postID, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil || postID <= 0 {
+			writeValidationError(w, "post id must be a positive integer")
+			return
+		}
+
+		if r.Header.Get("Content-Type") != "application/json" {
+			writeValidationError(w, "Content-Type must be application/json")
+			return
+		}
+
+		var body struct {
+			Message string `json:"message"`
+			Email   string `json:"email"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeValidationError(w, "invalid JSON body")
+			return
+		}
+
+		email := strings.TrimSpace(body.Email)
+		message := strings.TrimSpace(body.Message)
+		if email == "" {
+			writeValidationError(w, "email is required")
+			return
+		}
+		if message == "" {
+			writeValidationError(w, "message is required")
+			return
+		}
+		if len(email) > 70 {
+			writeValidationError(w, "email too long")
+			return
+		}
+		if len(message) > 32000 {
+			writeValidationError(w, "message too long")
+			return
+		}
+
+		// Verify post exists
+		post, err := marketSvc.GetPost(r.Context(), postID)
+		if err != nil || post == nil {
+			writeJSON(w, http.StatusNotFound, errorEnvelope{
+				Error: apiError{Code: "not_found", Message: "post not found"},
+			})
+			return
+		}
+
+		if err := marketSvc.SendMessage(r.Context(), postID, email, message); err != nil {
+			logger := slog.Default()
+			logger.Error("send message failed", "err", err, "post_id", postID)
+			writeJSON(w, http.StatusInternalServerError, errorEnvelope{
+				Error: apiError{
+					Code:    "send_failed",
+					Message: err.Error(),
+				},
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{"data": map[string]string{"status": "sent"}})
 	})
 
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -232,7 +332,7 @@ func withCORS(origins string, next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {

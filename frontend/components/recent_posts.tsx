@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Post } from "@/types/marketplace";
 
 type RecentPostsProps = {
@@ -13,14 +14,14 @@ export function RecentPosts({ posts }: RecentPostsProps) {
   return (
     <div id="recentPosts">
       <div className="moduleTitle">
-        <a href="/search">recently posted</a>
+        <Link href="/search">recently posted</Link>
       </div>
       {posts.map((post) => (
         <div key={post.id} className="one-result">
-          <a href={`/post/${post.id}`} className="post-link">
+          <Link href={`/post/${post.id}`} className="post-link">
             {post.name}
             {formatPrice(post)}
-          </a>{" "}
+          </Link>{" "}
           <span className="verified">@stanford.edu</span>{" "}
           {post.has_image && (
             <span className="photo-tag">

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Post } from "@/types/marketplace";
 
 type PhotoStripProps = {
@@ -18,15 +19,15 @@ export function PhotoStrip({ posts }: PhotoStripProps) {
     <div className="post_photos clearfix" id="tickerTd">
       {items.map((post) => (
         <div key={post.id} className="post_photo" title={post.name}>
-          <a href={`/post/${post.id}`}>
+          <Link href={`/post/${post.id}`}>
             <div className="photo-placeholder photo_image_tag">
               #{post.id}
             </div>
-          </a>
+          </Link>
           <div className="post_photo_title">
-            <a href={`/post/${post.id}`}>
+            <Link href={`/post/${post.id}`}>
               {truncateTitle(post.name)}
-            </a>
+            </Link>
           </div>
           <span className="days-ago">
             {post.time_posted_at ?? "—"}

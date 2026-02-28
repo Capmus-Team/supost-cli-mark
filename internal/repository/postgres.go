@@ -419,6 +419,75 @@ LIMIT $4 OFFSET $5
 	return posts, total, nil
 }
 
+// GetPostByID returns a single post by ID, or nil if not found.
+func (r *Postgres) GetPostByID(ctx context.Context, id int64) (*domain.Post, error) {
+	const query = `
+SELECT
+	id,
+	COALESCE(category_id, 0) AS category_id,
+	COALESCE(subcategory_id, 0) AS subcategory_id,
+	COALESCE(email, '') AS email,
+	COALESCE(name, '') AS name,
+	COALESCE(body, '') AS body,
+	COALESCE(status, 0) AS status,
+	COALESCE(time_posted, 0) AS time_posted,
+	COALESCE(time_posted_at, to_timestamp(0)) AS time_posted_at,
+	COALESCE(price::float8, 0) AS price,
+	(price IS NOT NULL) AS has_price,
+	(
+		COALESCE(photo1_file_name, '') <> '' OR
+		COALESCE(photo2_file_name, '') <> '' OR
+		COALESCE(photo3_file_name, '') <> '' OR
+		COALESCE(photo4_file_name, '') <> '' OR
+		COALESCE(image_source1, '') <> '' OR
+		COALESCE(image_source2, '') <> '' OR
+		COALESCE(image_source3, '') <> '' OR
+		COALESCE(image_source4, '') <> ''
+	) AS has_image,
+	COALESCE(created_at, now()) AS created_at,
+	COALESCE(updated_at, created_at, now()) AS updated_at
+FROM public.post
+WHERE id = $1
+`
+	var post domain.Post
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&post.ID,
+		&post.CategoryID,
+		&post.SubcategoryID,
+		&post.Email,
+		&post.Name,
+		&post.Body,
+		&post.Status,
+		&post.TimePosted,
+		&post.TimePostedAt,
+		&post.Price,
+		&post.HasPrice,
+		&post.HasImage,
+		&post.CreatedAt,
+		&post.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("querying post by id: %w", err)
+	}
+	return &post, nil
+}
+
+// SendMessage inserts a message into app_private.message.
+func (r *Postgres) SendMessage(ctx context.Context, postID int64, email, message string) error {
+	const query = `
+INSERT INTO app_private.message (post_id, email, raw_email, message, source, status)
+VALUES ($1, $2, $2, $3, 'web', 'queued')
+`
+	_, err := r.db.ExecContext(ctx, query, postID, email, message)
+	if err != nil {
+		return fmt.Errorf("inserting message: %w", err)
+	}
+	return nil
+}
+
 func clampRecentLimit(limit int) int {
 	if limit <= 0 || limit > maxRecentActivePosts {
 		return maxRecentActivePosts

@@ -1,13 +1,30 @@
 /*
- * SUpost clone overrides - replaces missing /images/site/*.png with CSS gradients
+ * SUpost clone overrides - matches original supost.com header, breadcrumbs, icons
  * and adds responsive + utility styles
  */
 
-/* Header background fallbacks (original uses url(/images/site/header.png)) */
+/* Header - solid medium-dark blue, rounded corners on BOTH top left and right */
+#universe {
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
+#header td:first-child {
+  border-top-left-radius: 12px;
+}
+
+#h1 {
+  border-top-left-radius: 12px; /* rounded corner near search input */
+}
+
+#header td:last-child {
+  border-top-right-radius: 12px;
+}
+
 #h1,
 #h_new,
 #h2 {
-  background: linear-gradient(to bottom, #4a7ab5 0%, #3b65a0 30%, #284c9e 70%, #1a3a7a 100%) repeat-x bottom !important;
+  background: #2e4d72 !important; /* solid color, slightly lighter than before */
 }
 
 #h2 div {
@@ -18,13 +35,85 @@
   background: none !important;
 }
 
-/* Breadcrumb/path bar - original uses url(/images/site/hipath.png) and headerleft.png */
+/* Keep line on post button (original borders from style.css) - no override */
+
+/* 4px gap between search input and button */
+#head form input[type="text"] {
+  margin-right: 4px;
+}
+
+#head form input[type="submit"] {
+  margin-left: 0;
+}
+
+/* Breadcrumb bar - lighter container, rounded corner on upper left only */
 #hi-path {
-  background: #d6dff4 repeat-x top !important;
+  background: #e8ecf8 repeat-x top !important;
+  border-radius: 8px 0 0 0;
+  border-bottom: 1px solid #ccc;
 }
 
 #hi-path #bread_crumb_header {
   background: none !important;
+}
+
+/* Category icons - use local icons.gif (from supost.com) */
+.for-sale-icon {
+  background: url(/legacy/icons.gif) -0px -240px no-repeat !important;
+}
+
+.personals-icon {
+  background: url(/legacy/icons.gif) -0px -40px no-repeat !important;
+}
+
+.housing-icon {
+  background: url(/legacy/icons.gif) -400px -160px no-repeat !important;
+}
+
+.off-campus-jobs-icon {
+  background: url(/legacy/icons.gif) -0px -440px no-repeat !important;
+}
+
+.campus-jobs-icon {
+  background: url(/legacy/icons.gif) -0px -1040px no-repeat !important;
+}
+
+.resumes-icon {
+  background: url(/legacy/icons.gif) -0px -760px no-repeat !important;
+}
+
+.community-icon {
+  background: url(/legacy/icons.gif) -0px -1400px no-repeat !important;
+}
+
+.services-icon {
+  background: url(/legacy/icons.gif) -400px -1000px no-repeat !important;
+}
+
+/* Icon display - ensure icons show with proper padding */
+.classifiedsOverviewTitle.housing-icon,
+.classifiedsOverviewTitle.for-sale-icon,
+.classifiedsOverviewTitle.personals-icon,
+.classifiedsOverviewTitle.off-campus-jobs-icon,
+.classifiedsOverviewTitle.campus-jobs-icon,
+.classifiedsOverviewTitle.community-icon,
+.classifiedsOverviewTitle.services-icon,
+.classifiedsOverviewTitle.resumes-icon {
+  background-position: 0 center;
+  min-height: 20px;
+}
+
+.category-header-title.housing-icon,
+.category-header-title.for-sale-icon,
+.category-header-title.personals-icon,
+.category-header-title.off-campus-jobs-icon,
+.category-header-title.campus-jobs-icon,
+.category-header-title.community-icon,
+.category-header-title.services-icon,
+.category-header-title.resumes-icon {
+  padding-left: 24px;
+  background-position: left center;
+  text-align: left;
 }
 
 /* Photo placeholder */
@@ -48,6 +137,93 @@
 
 .page-error button {
   padding: 6px 12px;
+}
+
+/* Reserve form (shown when Reserve button/arrow clicked) */
+.post-formstack {
+  margin-bottom: 10px;
+}
+
+.post-formstack h2 {
+  border-width: 0 !important;
+}
+
+.post-formstack-iframe {
+  display: block;
+}
+
+/* Reserve button arrow - use local arrow from supost.com */
+.stripe-reserve-button .arrow-left {
+  background-image: url(/legacy/arrow-left.png);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  cursor: pointer;
+  display: inline-block;
+  width: 90px;
+  height: 32px;
+  margin-left: 20px;
+  vertical-align: middle;
+  border: none;
+  padding: 0;
+}
+
+/* Post detail page - 80% post content, 20% message box (match original layout) */
+#item-content .post-table {
+  width: 100%;
+}
+
+#item-content .post-table td.postBodyBox {
+  width: 80%;
+  vertical-align: top;
+}
+
+#item-content .post-table td.messagePosterBox {
+  width: 20%;
+  vertical-align: top;
+  min-width: 145px;
+}
+
+#item-content .post-details {
+  margin-right: 20px;
+}
+
+/* Post detail page - photos in 2x2 quadrant grid */
+.post-photos {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 10px;
+}
+
+.post-photos .post-photo {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+  aspect-ratio: 1;
+}
+
+.post-photos .photo-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+}
+
+/* Message box - constrain to 20% column width */
+.messagePosterBox textarea {
+  width: 98.5% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.messagePosterBox input[type="text"],
+.messagePosterBox input[type="email"] {
+  width: 98% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
 /* Responsive - original supost breakpoint */
@@ -77,13 +253,15 @@
     display: none !important;
   }
 
-  .post_photos {
+  .post_photos,
+  .post-photos {
     width: 100% !important;
   }
 
-  .post_photo {
-    width: 48% !important;
-    margin: 0 1% !important;
+  .post_photo,
+  .post-photos .post-photo {
+    width: 100% !important;
+    margin: 0 !important;
     box-sizing: border-box !important;
   }
 
@@ -96,5 +274,11 @@
   .photo-placeholder {
     width: 100% !important;
     max-width: none !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .post-photos {
+    grid-template-columns: 1fr;
   }
 }

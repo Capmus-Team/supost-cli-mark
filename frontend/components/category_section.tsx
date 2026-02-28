@@ -1,7 +1,7 @@
 "use client";
 
 import { useCategoryColumns } from "@/hooks/use-category-columns";
-import { getCategoryCssClass } from "@/util/category-class";
+import { getCategoryCssClass, getCategoryIconClass } from "@/util/category-class";
 import type { Category, Subcategory } from "@/types/marketplace";
 
 type CategorySectionProps = {
@@ -25,7 +25,7 @@ export function CategorySection({
       <tbody>
         <tr>
           <td className="category_header" colSpan={2}>
-            <div className="category-header-title">
+            <div className={`category-header-title ${getCategoryIconClass(category.short_name)}`}>
               <a href={`/search/cat/${category.id}`}>
                 {category.short_name}
               </a>

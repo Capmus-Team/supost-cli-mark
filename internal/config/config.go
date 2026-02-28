@@ -7,6 +7,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+func firstNonEmpty(a, b string) string {
+	if strings.TrimSpace(a) != "" {
+		return a
+	}
+	return b
+}
+
 // Config holds all application configuration.
 // All config loads through this package. No os.Getenv() elsewhere.
 // See AGENTS.md §5.2.
@@ -20,6 +27,11 @@ type Config struct {
 	// Supabase (used by future Next.js frontend — shared .env)
 	SupabaseURL     string `json:"supabase_url"`
 	SupabaseAnonKey string `json:"supabase_anon_key"`
+
+	// Mailgun — for sending post messages to sellers
+	MailgunAPIKey  string `json:"mailgun_api_key"`
+	MailgunDomain  string `json:"mailgun_domain"`
+	MailgunFrom    string `json:"mailgun_from"`
 }
 
 var envInitOnce sync.Once
@@ -34,6 +46,9 @@ func Load() (*Config, error) {
 		CORSOrigins:     viper.GetString("cors_origins"),
 		SupabaseURL:     viper.GetString("supabase_url"),
 		SupabaseAnonKey: viper.GetString("supabase_anon_key"),
+		MailgunAPIKey:   viper.GetString("mailgun_api_key"),
+		MailgunDomain:   viper.GetString("mailgun_domain"),
+		MailgunFrom:     firstNonEmpty(viper.GetString("mailgun_from"), viper.GetString("mailgun_from_email")),
 	}, nil
 }
 

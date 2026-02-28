@@ -29,9 +29,17 @@ func (m *mockMarketplaceRepo) ListPosts(_ context.Context, filter domain.PostFil
 	return m.posts, m.total, nil
 }
 
+func (m *mockMarketplaceRepo) GetPostByID(_ context.Context, _ int64) (*domain.Post, error) {
+	return nil, nil
+}
+
+func (m *mockMarketplaceRepo) SendMessage(_ context.Context, _ int64, _, _ string) error {
+	return nil
+}
+
 func TestMarketplaceService_ListSubcategories_Validation(t *testing.T) {
 	repo := &mockMarketplaceRepo{}
-	svc := NewMarketplaceService(repo)
+	svc := NewMarketplaceService(repo, nil)
 
 	_, err := svc.ListSubcategories(context.Background(), 0)
 	if err == nil {
@@ -44,7 +52,7 @@ func TestMarketplaceService_ListSubcategories_Validation(t *testing.T) {
 
 func TestMarketplaceService_ListPosts_DefaultsAndClamp(t *testing.T) {
 	repo := &mockMarketplaceRepo{}
-	svc := NewMarketplaceService(repo)
+	svc := NewMarketplaceService(repo, nil)
 
 	_, _, err := svc.ListPosts(context.Background(), domain.PostFilter{
 		Limit:  999,
@@ -64,7 +72,7 @@ func TestMarketplaceService_ListPosts_DefaultsAndClamp(t *testing.T) {
 
 func TestMarketplaceService_ListPosts_ValidatesNegativeValues(t *testing.T) {
 	repo := &mockMarketplaceRepo{}
-	svc := NewMarketplaceService(repo)
+	svc := NewMarketplaceService(repo, nil)
 
 	_, _, err := svc.ListPosts(context.Background(), domain.PostFilter{Offset: -1})
 	if err == nil {

@@ -157,6 +157,24 @@ func (r *InMemory) ListPosts(_ context.Context, filter domain.PostFilter) ([]dom
 	return out, total, nil
 }
 
+func (r *InMemory) GetPostByID(_ context.Context, id int64) (*domain.Post, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for i := range r.posts {
+		if r.posts[i].ID == id {
+			p := r.posts[i]
+			return &p, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *InMemory) SendMessage(_ context.Context, _ int64, _, _ string) error {
+	// In-memory: no-op; messages are not persisted
+	return nil
+}
+
 func (r *InMemory) listRecentActivePosts(limit int, categoryID *int64) []domain.Post {
 	if limit <= 0 {
 		limit = 50
@@ -278,6 +296,22 @@ func (r *InMemory) loadPostSeedData() {
 	now := time.Now()
 	r.posts = append(r.posts,
 		domain.Post{
+			ID:            130031773,
+			CategoryID:    5,
+			SubcategoryID: 11,
+			Email:         "seller@stanford.edu",
+			Name:          "Apple Magic Keyboard & Magic Mouse 2 Bundle (Lightning) - $75",
+			Body:          "Upgrading my setup and moving to Windows, so I'm selling my genuine Apple desktop accessories. These are the classic Lightning port versions, perfectly maintained and fully functional.\n\n1. Magic Keyboard with Numeric Keypad: Silver/White, US English. Features the extended layout with document navigation controls and full-size arrow keys. [Retails for 129$]\n\n2. Magic Mouse 2: Seamless Multi-Touch surface for gestures (scrolling, swiping). [Retails for 79$]\n\nBonus: I'm including an original Apple Lightning cable for charging.\n\nOriginal Boxes: Both items come in their original retail packaging.\n\nCondition: Lightly Used\n\nEverything works perfectly, keys are tactile and the mouse tracking is smooth.\n\nCosmetically in great shape with no major scratches or wear.\n\nplease do not message this poster about other commercial services",
+			Status:        domain.PostStatusActive,
+			TimePosted:    now.Add(-4 * 24 * time.Hour).Unix(),
+			TimePostedAt:  now.Add(-4 * 24 * time.Hour),
+			Price:         75,
+			HasPrice:      true,
+			HasImage:      true,
+			CreatedAt:     now.Add(-4 * 24 * time.Hour),
+			UpdatedAt:     now.Add(-4 * 24 * time.Hour),
+		},
+		domain.Post{
 			ID:            130031901,
 			CategoryID:    3,
 			SubcategoryID: 14,
@@ -354,10 +388,11 @@ func (r *InMemory) loadPostSeedData() {
 		domain.Post{
 			ID:            130031896,
 			CategoryID:    5,
-			SubcategoryID: 20,
+			SubcategoryID: 11,
 			Email:         "pat@stanford.edu",
 			Name:          "Apple Magic Keyboard & Magic Mouse 2 Bundle (Lightning)",
-			Status:        0,
+			Body:          "Upgrading my setup and moving to Windows, so I'm selling my genuine Apple desktop accessories. These are the classic Lightning port versions, perfectly maintained and fully functional.\n\n1. Magic Keyboard with Numeric Keypad: Silver/White, US English. Features the extended layout with document navigation controls and full-size arrow keys. [Retails for 129$]\n\n2. Magic Mouse 2: Seamless Multi-Touch surface for gestures (scrolling, swiping). [Retails for 79$]\n\nBonus: I'm including an original Apple Lightning cable for charging.\n\nOriginal Boxes: Both items come in their original retail packaging.\n\nCondition: Lightly Used\n\nEverything works perfectly, keys are tactile and the mouse tracking is smooth.\n\nCosmetically in great shape with no major scratches or wear.",
+			Status:        domain.PostStatusActive,
 			TimePosted:    now.Add(-20 * time.Hour).Unix(),
 			TimePostedAt:  now.Add(-20 * time.Hour),
 			Price:         65,
