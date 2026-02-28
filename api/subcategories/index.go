@@ -5,18 +5,18 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Capmus-Team/supost-cli/internal/vercelapi"
+	"github.com/Capmus-Team/supost-cli/api/shared"
 )
 
 var (
-	apiInstance *vercelapi.API
+	apiInstance *shared.Runtime
 	apiErr      error
 	apiOnce     sync.Once
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	apiOnce.Do(func() {
-		apiInstance, apiErr = vercelapi.NewAPI()
+		apiInstance, apiErr = shared.GetRuntime()
 	})
 	if apiErr != nil {
 		log.Printf("initializing api: %v", apiErr)
