@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Capmus-Team/supost-cli-mark/frontend/internal/apiruntime"
+	"github.com/Capmus-Team/supost-cli-mark/frontend/apiruntime"
 )
 
 var (
