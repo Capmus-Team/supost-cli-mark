@@ -76,22 +76,35 @@ Open `http://localhost:3000`.
 
 Deploy frontend and Go API together as one Vercel project.
 
-1. Connect this repo to Vercel.
-2. In **Project Settings → General**:
-   - Set **Root Directory** to `frontend` (required so Next.js is built and served at `/`)
-   - Enable **Include source files outside of the Root Directory** (required for Go build to find `go.mod`)
-3. Add environment variables in **Settings → Environment Variables**:
-   - `DATABASE_URL` (Supabase Postgres connection string)
-   - `CORS_ORIGINS` (e.g. `https://your-app.vercel.app` — no trailing slash)
-4. Deploy. The homepage and API will be served from the same URL:
-   - `https://<project>.vercel.app/` — Next.js homepage
-   - `https://<project>.vercel.app/api/health`
-   - `https://<project>.vercel.app/api/categories`
-   - etc.
+### 1. Vercel Dashboard Settings (Project Settings → General)
 
-### CORS
+| Setting | Value |
+|---------|-------|
+| **Root Directory** | `frontend` |
+| **Framework Preset** | Next.js |
+| **Include source files outside of the Root Directory** | Enabled ✓ |
 
-- Set `CORS_ORIGINS` to your production URL(s) without trailing slashes, e.g. `https://supost-cli.vercel.app`
+### 2. Environment Variables (Settings → Environment Variables)
+
+Add these for **Production** (and Preview if needed):
+
+| Variable | Value | Required |
+|----------|-------|----------|
+| `DATABASE_URL` | `postgresql://...` (Supabase pooler URL) | Yes |
+| `CORS_ORIGINS` | `https://supost-cli-mark.vercel.app` (no trailing slash) | Yes |
+
+Your local `.env` is **not** deployed. Set these in the Vercel dashboard.
+
+### 3. Deploy
+
+```bash
+vercel --prod
+```
+
+The homepage and API will be served from the same URL:
+- `https://<project>.vercel.app/` — Next.js homepage
+- `https://<project>.vercel.app/api/health`
+- `https://<project>.vercel.app/api/categories`
 
 ## Validation Commands
 

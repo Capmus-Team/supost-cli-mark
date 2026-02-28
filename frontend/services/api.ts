@@ -21,26 +21,42 @@ async function fetchJSON<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function fetchJSONSafe<T>(path: string, fallback: T): Promise<T> {
+  try {
+    return await fetchJSON<T>(path);
+  } catch {
+    return fallback;
+  }
+}
+
 export const getCategories = cache(async (): Promise<Category[]> => {
-  const response = await fetchJSON<DataResponse<Category[]>>("/api/categories");
+  const response = await fetchJSONSafe<DataResponse<Category[]>>(
+    "/api/categories",
+    { data: [] },
+  );
   return response.data;
 });
 
 export const getSubcategoriesByCategory = cache(
   async (categoryID: number): Promise<Subcategory[]> => {
-    const response = await fetchJSON<DataResponse<Subcategory[]>>(
+    const response = await fetchJSONSafe<DataResponse<Subcategory[]>>(
       `/api/subcategories?category_id=${categoryID}`,
+      { data: [] },
     );
     return response.data;
   },
 );
 
 export async function getRecentPosts(limit = 50) {
-  return fetchJSON<PostsResponse>(`/api/posts?limit=${limit}`);
+  return fetchJSONSafe<PostsResponse>(`/api/posts?limit=${limit}`, {
+    data: [],
+    meta: { total: 0, limit, offset: 0 },
+  });
 }
 
 export async function getFeaturedJobPosts(limit = 3) {
-  return fetchJSON<PostsResponse>(
+  return fetchJSONSafe<PostsResponse>(
     `/api/posts?category_id=2&limit=${limit}&status=1`,
+    { data: [], meta: { total: 0, limit, offset: 0 } },
   );
 }
