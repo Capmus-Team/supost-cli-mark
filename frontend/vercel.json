@@ -1,8 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/**/*.go": {
-      "maxDuration": 30
-    }
-  }
+    "api/**/*.go": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/api/posts/:id", "destination": "/api/post-by-id?id=:id" }
+  ]
 }

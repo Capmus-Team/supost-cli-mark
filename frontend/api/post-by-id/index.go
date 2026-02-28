@@ -24,15 +24,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	// Extract id from path: /api/posts/123
-	path := r.URL.Path
-	idStr := ""
-	for i := len(path) - 1; i >= 0; i-- {
-		if path[i] == '/' {
-			idStr = path[i+1:]
-			break
-		}
-	}
+	idStr := r.URL.Query().Get("id")
 	if idStr == "" {
 		http.Error(w, "post id required", http.StatusBadRequest)
 		return
