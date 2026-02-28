@@ -15,6 +15,7 @@ This repository now contains:
 - Domain contracts: `internal/domain/`
 - Data access adapters: `internal/repository/` (`inmemory` and `postgres`)
 - Vercel Functions handlers: `frontend/api/*/index.go`
+- Vercel Go runtime module: `frontend/go.mod`
 
 The backend API surface is the same for local server and Vercel functions:
 
@@ -53,6 +54,8 @@ Use `.env.example` at repo root:
 Use `frontend/.env.example`:
 
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`
+- `DATABASE_URL=postgresql://...` (required for Vercel Go functions)
+- `CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
 
 ## Run Locally
 
@@ -76,24 +79,29 @@ Open `http://localhost:3000`.
 
 Deploy frontend and Go API together as one Vercel project.
 
-### 1. Vercel Dashboard Settings (Project Settings → General)
+### 1. Vercel Dashboard Settings (Project Settings -> General)
 
 | Setting | Value |
 |---------|-------|
 | **Root Directory** | `frontend` |
 | **Framework Preset** | Next.js |
-| **Include source files outside of the Root Directory** | Enabled ✓ |
+| **Node.js Version** | 20.x or newer |
 
-### 2. Environment Variables (Settings → Environment Variables)
+Vercel will deploy:
+- Next.js app from `frontend/app`
+- Go serverless functions from `frontend/api`
 
-Add these for **Production** (and Preview if needed):
+### 2. Environment Variables (Settings -> Environment Variables)
+
+Add these for **Production** and **Preview**:
 
 | Variable | Value | Required |
 |----------|-------|----------|
 | `DATABASE_URL` | `postgresql://...` (Supabase pooler URL) | Yes |
-| `CORS_ORIGINS` | `https://supost-cli-mark.vercel.app` (no trailing slash) | Yes |
+| `CORS_ORIGINS` | `https://<your-project>.vercel.app` (no trailing slash) | Yes |
+| `NEXT_PUBLIC_API_BASE_URL` | Leave empty to use same-origin `/api` on Vercel | No |
 
-Your local `.env` is **not** deployed. Set these in the Vercel dashboard.
+Your local `.env`/`.env.local` files are not deployed. Set vars in the Vercel dashboard.
 
 ### 3. Deploy
 
@@ -119,6 +127,7 @@ Frontend:
 
 ```bash
 cd frontend
+npm ci
 npm run typecheck
 npm run build
 ```
