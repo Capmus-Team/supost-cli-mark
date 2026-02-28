@@ -77,7 +77,9 @@ Open `http://localhost:3000`.
 Deploy frontend and Go API together as one Vercel project.
 
 1. Connect this repo to Vercel.
-2. In **Project Settings → General**, enable **Include source files outside of the Root Directory** (required for Go build to find `go.mod`).
+2. In **Project Settings → General**:
+   - Set **Root Directory** to `frontend` (required so Next.js is built and served at `/`)
+   - Enable **Include source files outside of the Root Directory** (required for Go build to find `go.mod`)
 3. Add environment variables in **Settings → Environment Variables**:
    - `DATABASE_URL` (Supabase Postgres connection string)
    - `CORS_ORIGINS` (e.g. `https://your-app.vercel.app` — no trailing slash)

@@ -22,3 +22,5 @@ node_modules/
 .vercel/
 out/
 *.tsbuildinfo  
+.vercel
+.env*.local
