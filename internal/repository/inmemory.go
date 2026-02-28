@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 // InMemory implements ListingStore using an in-memory map.

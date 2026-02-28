@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

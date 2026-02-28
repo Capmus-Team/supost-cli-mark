@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 // mockListingRepo is a minimal test double.

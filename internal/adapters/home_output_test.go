@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 func TestWrapStyledWords_RespectsWidth(t *testing.T) {

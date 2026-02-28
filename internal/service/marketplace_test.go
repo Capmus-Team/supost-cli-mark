@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 type mockMarketplaceRepo struct {

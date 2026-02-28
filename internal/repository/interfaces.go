@@ -8,7 +8,7 @@ package repository
 import (
 	"context"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 // ListingStore is the shared interface for listing data access.

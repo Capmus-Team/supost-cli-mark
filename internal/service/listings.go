@@ -7,7 +7,7 @@ package service
 import (
 	"context"
 
-	"github.com/Capmus-Team/supost-cli/internal/domain"
+	"github.com/Capmus-Team/supost-cli-mark/internal/domain"
 )
 
 // ListingRepository defines the data access interface for listings.

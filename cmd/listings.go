@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Capmus-Team/supost-cli/internal/adapters"
-	"github.com/Capmus-Team/supost-cli/internal/config"
-	"github.com/Capmus-Team/supost-cli/internal/repository"
-	"github.com/Capmus-Team/supost-cli/internal/service"
+	"github.com/Capmus-Team/supost-cli-mark/internal/adapters"
+	"github.com/Capmus-Team/supost-cli-mark/internal/config"
+	"github.com/Capmus-Team/supost-cli-mark/internal/repository"
+	"github.com/Capmus-Team/supost-cli-mark/internal/service"
 
 	"github.com/spf13/cobra"
 )
