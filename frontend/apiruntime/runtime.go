@@ -213,6 +213,19 @@ func (rt *Runtime) Posts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// GET /api/posts/{id} — single post (Vercel routes /api/posts/123 to this handler)
+	path := strings.TrimPrefix(r.URL.Path, "/api/posts/")
+	if path != "" && path != r.URL.Path {
+		idStr := strings.Trim(path, "/")
+		if idStr != "" {
+			id, err := parsePositiveInt64(idStr, "id")
+			if err == nil {
+				rt.GetPost(w, r, id)
+				return
+			}
+		}
+	}
+
 	filter, err := parsePostFilter(r)
 	if err != nil {
 		writeValidationError(w, err.Error())
@@ -520,6 +533,65 @@ func ensurePoolerSafeConnectionString(databaseURL string) string {
 		trimmed += " description_cache_capacity=0"
 	}
 	return trimmed
+}
+
+func (rt *Runtime) GetPost(w http.ResponseWriter, r *http.Request, id int64) {
+	const query = `
+SELECT
+	id,
+	COALESCE(category_id, 0) AS category_id,
+	COALESCE(subcategory_id, 0) AS subcategory_id,
+	COALESCE(email, '') AS email,
+	COALESCE(name, '') AS name,
+	COALESCE(body, '') AS body,
+	COALESCE(status, 0) AS status,
+	COALESCE(time_posted, 0) AS time_posted,
+	COALESCE(time_posted_at, to_timestamp(0)) AS time_posted_at,
+	COALESCE(price::float8, 0) AS price,
+	(price IS NOT NULL) AS has_price,
+	(
+		COALESCE(photo1_file_name, '') <> '' OR
+		COALESCE(photo2_file_name, '') <> '' OR
+		COALESCE(photo3_file_name, '') <> '' OR
+		COALESCE(photo4_file_name, '') <> '' OR
+		COALESCE(image_source1, '') <> '' OR
+		COALESCE(image_source2, '') <> '' OR
+		COALESCE(image_source3, '') <> '' OR
+		COALESCE(image_source4, '') <> ''
+	) AS has_image,
+	COALESCE(created_at, now()) AS created_at,
+	COALESCE(updated_at, created_at, now()) AS updated_at
+FROM public.post
+WHERE id = $1
+`
+	var post Post
+	err := rt.db.QueryRowContext(r.Context(), query, id).Scan(
+		&post.ID,
+		&post.CategoryID,
+		&post.SubcategoryID,
+		&post.Email,
+		&post.Name,
+		&post.Body,
+		&post.Status,
+		&post.TimePosted,
+		&post.TimePostedAt,
+		&post.Price,
+		&post.HasPrice,
+		&post.HasImage,
+		&post.CreatedAt,
+		&post.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		writeJSON(w, http.StatusNotFound, errorEnvelope{
+			Error: apiError{Code: "not_found", Message: "post not found"},
+		})
+		return
+	}
+	if err != nil {
+		writeInternalError(w)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": post})
 }
 
 func (rt *Runtime) Ping(ctx context.Context) error {
