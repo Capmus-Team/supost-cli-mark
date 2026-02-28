@@ -5,18 +5,18 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Capmus-Team/supost-cli-mark/frontend/api/shared"
+	"github.com/Capmus-Team/supost-cli-mark/frontend/internal/apiruntime"
 )
 
 var (
-	apiInstance *shared.Runtime
+	apiInstance *apiruntime.Runtime
 	apiErr      error
 	apiOnce     sync.Once
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	apiOnce.Do(func() {
-		apiInstance, apiErr = shared.GetRuntime()
+		apiInstance, apiErr = apiruntime.GetRuntime()
 	})
 	if apiErr != nil {
 		log.Printf("initializing api: %v", apiErr)
