@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import type {
   Category,
   DataResponse,
@@ -6,13 +7,32 @@ import type {
   Subcategory,
 } from "@/types/marketplace";
 
-// On Vercel, use same origin. Locally, API runs on :8080.
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:8080");
+function trimTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
+async function resolveAPIBaseURL(): Promise<string> {
+  const explicit = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (explicit) {
+    return trimTrailingSlash(explicit);
+  }
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  if (host) {
+    const proto = requestHeaders.get("x-forwarded-proto") ?? "https";
+    return `${proto}://${host}`;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:8080";
+}
 
 async function fetchJSON<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const apiBaseURL = await resolveAPIBaseURL();
+  const response = await fetch(`${apiBaseURL}${path}`, {
     next: { revalidate: 15 },
   });
   if (!response.ok) {
