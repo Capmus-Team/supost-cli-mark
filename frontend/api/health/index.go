@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Capmus-Team/supost-cli/api/shared"
+	"github.com/Capmus-Team/supost-cli/frontend/api/shared"
 )
 
 var (

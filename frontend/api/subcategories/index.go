@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Capmus-Team/supost-cli/api/shared"
+	"github.com/Capmus-Team/supost-cli/frontend/api/shared"
 )
 
 var (
@@ -23,5 +23,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	apiInstance.Posts(w, r)
+	apiInstance.Subcategories(w, r)
 }

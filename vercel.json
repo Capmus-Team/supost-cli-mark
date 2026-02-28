@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rootDirectory": "frontend",
   "functions": {
     "api/**/*.go": {
       "maxDuration": 30

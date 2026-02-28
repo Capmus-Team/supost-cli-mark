@@ -1,4 +1,4 @@
-.PHONY: build test vet lint fmt check clean serve migrate deploy-backend deploy-frontend deploy-all
+.PHONY: build test vet lint fmt check clean serve migrate deploy
 
 VERCEL_ENV ?= production
 VERCEL_TOKEN ?=
@@ -35,12 +35,6 @@ migrate:
 clean:
 	rm -rf bin/ coverage.out
 
-deploy-backend:
+deploy:
 	vercel pull --yes --environment=$(VERCEL_ENV) --cwd . $(VERCEL_AUTH)
 	vercel deploy --prod --yes --cwd . $(VERCEL_AUTH)
-
-deploy-frontend:
-	vercel pull --yes --environment=$(VERCEL_ENV) --cwd frontend $(VERCEL_AUTH)
-	vercel deploy --prod --yes --cwd frontend $(VERCEL_AUTH)
-
-deploy-all: deploy-backend deploy-frontend

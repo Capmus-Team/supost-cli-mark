@@ -409,7 +409,7 @@ func buildAllowedOrigins(origins string) map[string]struct{} {
 		"http://127.0.0.1:3000": {},
 	}
 	for _, value := range strings.Split(origins, ",") {
-		trimmed := strings.TrimSpace(value)
+		trimmed := strings.TrimSpace(strings.TrimSuffix(value, "/"))
 		if trimmed == "" {
 			continue
 		}
@@ -419,6 +419,7 @@ func buildAllowedOrigins(origins string) map[string]struct{} {
 }
 
 func isOriginAllowed(origin string, allowed map[string]struct{}) bool {
+	origin = strings.TrimSuffix(origin, "/")
 	_, ok := allowed[origin]
 	return ok
 }

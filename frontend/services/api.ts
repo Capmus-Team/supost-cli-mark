@@ -6,8 +6,10 @@ import type {
   Subcategory,
 } from "@/types/marketplace";
 
+// On Vercel, use same origin. Locally, API runs on :8080.
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:8080");
 
 async function fetchJSON<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {

@@ -14,7 +14,7 @@ This repository now contains:
 - Business logic: `internal/service/`
 - Domain contracts: `internal/domain/`
 - Data access adapters: `internal/repository/` (`inmemory` and `postgres`)
-- Vercel Functions handlers: `api/*/index.go`
+- Vercel Functions handlers: `frontend/api/*/index.go`
 
 The backend API surface is the same for local server and Vercel functions:
 
@@ -72,70 +72,24 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Deploy To Vercel (Frontend + Backend)
+## Deploy To Vercel (Single Project)
 
-Deploy as **two Vercel projects** from the same repo.
+Deploy frontend and Go API together as one Vercel project.
 
-### 1. Backend Project (Vercel Functions)
-
-1. In Vercel, create a new project from this repo.
-2. Set **Root Directory** to repo root (`.`).
-3. Keep `vercel.json` at root (already added).
-4. Add environment variables:
+1. Connect this repo to Vercel.
+2. In **Project Settings → General**, enable **Include source files outside of the Root Directory** (required for Go build to find `go.mod`).
+3. Add environment variables in **Settings → Environment Variables**:
    - `DATABASE_URL` (Supabase Postgres connection string)
-   - `CORS_ORIGINS` (include your frontend Vercel URL, comma-separated if multiple)
-   - optional: `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-5. Deploy.
+   - `CORS_ORIGINS` (e.g. `https://your-app.vercel.app` — no trailing slash)
+4. Deploy. The homepage and API will be served from the same URL:
+   - `https://<project>.vercel.app/` — Next.js homepage
+   - `https://<project>.vercel.app/api/health`
+   - `https://<project>.vercel.app/api/categories`
+   - etc.
 
-Backend endpoints will be:
+### CORS
 
-- `https://<backend-project>.vercel.app/api/health`
-- `https://<backend-project>.vercel.app/api/categories`
-- `https://<backend-project>.vercel.app/api/subcategories?category_id=5`
-- `https://<backend-project>.vercel.app/api/posts?limit=20`
-
-### 2. Frontend Project (Next.js)
-
-1. Create a second Vercel project from the same repo.
-2. Set **Root Directory** to `frontend`.
-3. Add environment variable:
-   - `NEXT_PUBLIC_API_BASE_URL=https://<backend-project>.vercel.app`
-4. Deploy.
-
-The homepage will then call your Go backend API on Vercel.
-
-### 3. CORS Checklist
-
-- Ensure backend `CORS_ORIGINS` includes:
-  - `https://<frontend-project>.vercel.app`
-  - any custom domain you attach
-
-### 4. One-Command CLI Deploy
-
-Prerequisites:
-
-- Install Vercel CLI: `npm i -g vercel`
-- Run `vercel login` once (or set `VERCEL_TOKEN`)
-- Ensure both projects are already linked in Vercel (`vercel pull` handles this interactively first time)
-
-Deploy commands from repo root:
-
-```bash
-# backend only (repo root project)
-make deploy-backend
-
-# frontend only (frontend/ project)
-make deploy-frontend
-
-# both projects in sequence
-make deploy-all
-```
-
-Non-interactive CI usage:
-
-```bash
-make deploy-all VERCEL_TOKEN=your_token VERCEL_ENV=production
-```
+- Set `CORS_ORIGINS` to your production URL(s) without trailing slashes, e.g. `https://supost-cli.vercel.app`
 
 ## Validation Commands
 
