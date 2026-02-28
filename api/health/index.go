@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"log"
@@ -13,8 +13,6 @@ var (
 	apiErr      error
 	apiOnce     sync.Once
 )
-
-func main() {}
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	apiOnce.Do(func() {
