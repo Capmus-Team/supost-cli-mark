@@ -26,3 +26,10 @@ type HomePostStore interface {
 	ListRecentActivePostsByCategory(ctx context.Context, categoryID int64, limit int) ([]domain.Post, error)
 	ListHomeCategorySections(ctx context.Context) ([]domain.HomeCategorySection, error)
 }
+
+// MarketplaceStore is the read contract for category/subcategory/post APIs.
+type MarketplaceStore interface {
+	ListCategories(ctx context.Context) ([]domain.Category, error)
+	ListSubcategoriesByCategory(ctx context.Context, categoryID int64) ([]domain.Subcategory, error)
+	ListPosts(ctx context.Context, filter domain.PostFilter) ([]domain.Post, int, error)
+}

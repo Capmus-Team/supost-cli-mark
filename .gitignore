@@ -13,3 +13,12 @@ coverage.out
 .env
 supabase/.temp
 .gocache
+supost_assets/
+
+# Node / frontend
+node_modules/
+.next/
+.turbo/
+.vercel/
+out/
+*.tsbuildinfo  

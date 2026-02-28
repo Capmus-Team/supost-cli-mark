@@ -238,6 +238,187 @@ ORDER BY category_id ASC
 	return sections, nil
 }
 
+// ListCategories returns all public categories.
+func (r *Postgres) ListCategories(ctx context.Context) ([]domain.Category, error) {
+	const query = `
+SELECT
+	id,
+	COALESCE(name, '') AS name,
+	COALESCE(short_name, '') AS short_name,
+	now() AS created_at,
+	now() AS updated_at
+FROM public.category
+ORDER BY id ASC
+`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("querying categories: %w", err)
+	}
+	defer rows.Close()
+
+	categories := make([]domain.Category, 0, 16)
+	for rows.Next() {
+		var category domain.Category
+		if err := rows.Scan(
+			&category.ID,
+			&category.Name,
+			&category.ShortName,
+			&category.CreatedAt,
+			&category.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning category row: %w", err)
+		}
+		categories = append(categories, category)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating category rows: %w", err)
+	}
+	return categories, nil
+}
+
+// ListSubcategoriesByCategory returns all subcategories for one category.
+func (r *Postgres) ListSubcategoriesByCategory(ctx context.Context, categoryID int64) ([]domain.Subcategory, error) {
+	const query = `
+SELECT
+	id,
+	COALESCE(category_id, 0) AS category_id,
+	COALESCE(name, '') AS name,
+	now() AS created_at,
+	now() AS updated_at
+FROM public.subcategory
+WHERE category_id = $1
+ORDER BY id ASC
+`
+
+	rows, err := r.db.QueryContext(ctx, query, categoryID)
+	if err != nil {
+		return nil, fmt.Errorf("querying subcategories: %w", err)
+	}
+	defer rows.Close()
+
+	subcategories := make([]domain.Subcategory, 0, 32)
+	for rows.Next() {
+		var subcategory domain.Subcategory
+		if err := rows.Scan(
+			&subcategory.ID,
+			&subcategory.CategoryID,
+			&subcategory.Name,
+			&subcategory.CreatedAt,
+			&subcategory.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning subcategory row: %w", err)
+		}
+		subcategories = append(subcategories, subcategory)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating subcategory rows: %w", err)
+	}
+	return subcategories, nil
+}
+
+// ListPosts returns posts with filtering and pagination.
+func (r *Postgres) ListPosts(ctx context.Context, filter domain.PostFilter) ([]domain.Post, int, error) {
+	var (
+		categoryID sql.NullInt64
+		subcatID   sql.NullInt64
+		status     sql.NullInt64
+	)
+	if filter.CategoryID > 0 {
+		categoryID.Valid = true
+		categoryID.Int64 = filter.CategoryID
+	}
+	if filter.SubcategoryID > 0 {
+		subcatID.Valid = true
+		subcatID.Int64 = filter.SubcategoryID
+	}
+	if filter.Status != 0 {
+		status.Valid = true
+		status.Int64 = int64(filter.Status)
+	}
+
+	const countQuery = `
+SELECT COUNT(1)
+FROM public.post
+WHERE ($1::bigint IS NULL OR category_id = $1)
+  AND ($2::bigint IS NULL OR subcategory_id = $2)
+  AND ($3::int IS NULL OR status = $3)
+`
+
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, categoryID, subcatID, status).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("counting posts: %w", err)
+	}
+
+	const listQuery = `
+SELECT
+	id,
+	COALESCE(category_id, 0) AS category_id,
+	COALESCE(subcategory_id, 0) AS subcategory_id,
+	COALESCE(email, '') AS email,
+	COALESCE(name, '') AS name,
+	COALESCE(body, '') AS body,
+	COALESCE(status, 0) AS status,
+	COALESCE(time_posted, 0) AS time_posted,
+	COALESCE(time_posted_at, to_timestamp(0)) AS time_posted_at,
+	COALESCE(price::float8, 0) AS price,
+	(price IS NOT NULL) AS has_price,
+	(
+		COALESCE(photo1_file_name, '') <> '' OR
+		COALESCE(photo2_file_name, '') <> '' OR
+		COALESCE(photo3_file_name, '') <> '' OR
+		COALESCE(photo4_file_name, '') <> '' OR
+		COALESCE(image_source1, '') <> '' OR
+		COALESCE(image_source2, '') <> '' OR
+		COALESCE(image_source3, '') <> '' OR
+		COALESCE(image_source4, '') <> ''
+	) AS has_image,
+	COALESCE(created_at, now()) AS created_at,
+	COALESCE(updated_at, created_at, now()) AS updated_at
+FROM public.post
+WHERE ($1::bigint IS NULL OR category_id = $1)
+  AND ($2::bigint IS NULL OR subcategory_id = $2)
+  AND ($3::int IS NULL OR status = $3)
+ORDER BY time_posted DESC NULLS LAST, id DESC
+LIMIT $4 OFFSET $5
+`
+
+	rows, err := r.db.QueryContext(ctx, listQuery, categoryID, subcatID, status, filter.Limit, filter.Offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("querying posts: %w", err)
+	}
+	defer rows.Close()
+
+	posts := make([]domain.Post, 0, filter.Limit)
+	for rows.Next() {
+		var post domain.Post
+		if err := rows.Scan(
+			&post.ID,
+			&post.CategoryID,
+			&post.SubcategoryID,
+			&post.Email,
+			&post.Name,
+			&post.Body,
+			&post.Status,
+			&post.TimePosted,
+			&post.TimePostedAt,
+			&post.Price,
+			&post.HasPrice,
+			&post.HasImage,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scanning post row: %w", err)
+		}
+		posts = append(posts, post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterating post rows: %w", err)
+	}
+
+	return posts, total, nil
+}
+
 func clampRecentLimit(limit int) int {
 	if limit <= 0 || limit > maxRecentActivePosts {
 		return maxRecentActivePosts

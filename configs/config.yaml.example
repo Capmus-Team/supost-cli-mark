@@ -4,6 +4,7 @@
 verbose: false
 format: json
 port: 8080
+cors_origins: "http://localhost:3000,http://127.0.0.1:3000"
 
 # Supabase Postgres connection (leave empty to use in-memory)
 # Local:    postgresql://postgres:postgres@localhost:54322/postgres

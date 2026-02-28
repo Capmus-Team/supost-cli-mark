@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -17,6 +20,8 @@ type InMemory struct {
 	mu       sync.RWMutex
 	listings map[string]domain.Listing
 	posts    []domain.Post
+	cats     []domain.Category
+	subcats  []domain.Subcategory
 }
 
 // NewInMemory creates a new in-memory repository pre-loaded with seed data.
@@ -24,9 +29,13 @@ func NewInMemory() *InMemory {
 	repo := &InMemory{
 		listings: make(map[string]domain.Listing),
 		posts:    make([]domain.Post, 0),
+		cats:     make([]domain.Category, 0),
+		subcats:  make([]domain.Subcategory, 0),
 	}
 	repo.loadSeedData()
 	repo.loadPostSeedData()
+	repo.loadCategorySeedData()
+	repo.loadSubcategorySeedData()
 	return repo
 }
 
@@ -78,6 +87,74 @@ func (r *InMemory) ListRecentActivePosts(_ context.Context, limit int) ([]domain
 
 func (r *InMemory) ListRecentActivePostsByCategory(_ context.Context, categoryID int64, limit int) ([]domain.Post, error) {
 	return r.listRecentActivePosts(limit, &categoryID), nil
+}
+
+func (r *InMemory) ListCategories(_ context.Context) ([]domain.Category, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make([]domain.Category, len(r.cats))
+	copy(out, r.cats)
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func (r *InMemory) ListSubcategoriesByCategory(_ context.Context, categoryID int64) ([]domain.Subcategory, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make([]domain.Subcategory, 0, len(r.subcats))
+	for _, subcat := range r.subcats {
+		if subcat.CategoryID == categoryID {
+			out = append(out, subcat)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func (r *InMemory) ListPosts(_ context.Context, filter domain.PostFilter) ([]domain.Post, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	filtered := make([]domain.Post, 0, len(r.posts))
+	for _, post := range r.posts {
+		if filter.CategoryID > 0 && post.CategoryID != filter.CategoryID {
+			continue
+		}
+		if filter.SubcategoryID > 0 && post.SubcategoryID != filter.SubcategoryID {
+			continue
+		}
+		if filter.Status != 0 && post.Status != filter.Status {
+			continue
+		}
+		filtered = append(filtered, post)
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		if filtered[i].TimePosted == filtered[j].TimePosted {
+			return filtered[i].ID > filtered[j].ID
+		}
+		return filtered[i].TimePosted > filtered[j].TimePosted
+	})
+
+	total := len(filtered)
+	start := filter.Offset
+	if start > total {
+		start = total
+	}
+	end := start + filter.Limit
+	if filter.Limit <= 0 || end > total {
+		end = total
+	}
+
+	out := make([]domain.Post, 0, end-start)
+	out = append(out, filtered[start:end]...)
+	return out, total, nil
 }
 
 func (r *InMemory) listRecentActivePosts(limit int, categoryID *int64) []domain.Post {
@@ -290,4 +367,76 @@ func (r *InMemory) loadPostSeedData() {
 			UpdatedAt:     now.Add(-20 * time.Hour),
 		},
 	)
+}
+
+func (r *InMemory) loadCategorySeedData() {
+	type categorySeedRow struct {
+		ID        int64  `json:"id"`
+		Name      string `json:"name"`
+		ShortName string `json:"short_name"`
+	}
+
+	rows := make([]categorySeedRow, 0)
+	if err := loadJSONSeed(filepath.Join("testdata", "seed", "category_rows.json"), &rows); err != nil {
+		return
+	}
+
+	now := time.Now().UTC()
+	for _, row := range rows {
+		r.cats = append(r.cats, domain.Category{
+			ID:        row.ID,
+			Name:      row.Name,
+			ShortName: row.ShortName,
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+	}
+}
+
+func (r *InMemory) loadSubcategorySeedData() {
+	type subcategorySeedRow struct {
+		ID         int64  `json:"id"`
+		CategoryID int64  `json:"category_id"`
+		Name       string `json:"name"`
+	}
+
+	rows := make([]subcategorySeedRow, 0)
+	if err := loadJSONSeed(filepath.Join("testdata", "seed", "subcategory_rows.json"), &rows); err != nil {
+		return
+	}
+
+	now := time.Now().UTC()
+	for _, row := range rows {
+		r.subcats = append(r.subcats, domain.Subcategory{
+			ID:         row.ID,
+			CategoryID: row.CategoryID,
+			Name:       row.Name,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+		})
+	}
+}
+
+func loadJSONSeed(path string, target interface{}) error {
+	candidates := []string{
+		path,
+		filepath.Join("..", "..", path),
+	}
+
+	var payload []byte
+	var err error
+	for _, candidate := range candidates {
+		payload, err = os.ReadFile(candidate)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(payload, target); err != nil {
+		return err
+	}
+	return nil
 }

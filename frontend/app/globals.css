@@ -1,0 +1,6 @@
+/*
+ * Minimal base - legacy style.css, stripe.css, supost-clone.css provide full supost UI
+ */
+* {
+  box-sizing: border-box;
+}

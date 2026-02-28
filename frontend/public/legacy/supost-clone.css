@@ -1,0 +1,100 @@
+/*
+ * SUpost clone overrides - replaces missing /images/site/*.png with CSS gradients
+ * and adds responsive + utility styles
+ */
+
+/* Header background fallbacks (original uses url(/images/site/header.png)) */
+#h1,
+#h_new,
+#h2 {
+  background: linear-gradient(to bottom, #4a7ab5 0%, #3b65a0 30%, #284c9e 70%, #1a3a7a 100%) repeat-x bottom !important;
+}
+
+#h2 div {
+  background: none !important;
+}
+
+#head {
+  background: none !important;
+}
+
+/* Breadcrumb/path bar - original uses url(/images/site/hipath.png) and headerleft.png */
+#hi-path {
+  background: #d6dff4 repeat-x top !important;
+}
+
+#hi-path #bread_crumb_header {
+  background: none !important;
+}
+
+/* Photo placeholder */
+.photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d7dff0;
+  background: #f7f9ff;
+  color: #666;
+  font-size: 12px;
+}
+
+.page-loading,
+.page-error {
+  max-width: 980px;
+  margin: 30px auto;
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+.page-error button {
+  padding: 6px 12px;
+}
+
+/* Responsive - original supost breakpoint */
+@media (max-width: 1040px) {
+  #universe {
+    width: 96% !important;
+  }
+
+  #leftNavBar {
+    display: none !important;
+  }
+
+  #indexBody {
+    padding-left: 0 !important;
+  }
+
+  #indexBodyContent {
+    width: 100% !important;
+  }
+
+  #recentPosts {
+    width: auto !important;
+    display: block !important;
+  }
+
+  #thoughts {
+    display: none !important;
+  }
+
+  .post_photos {
+    width: 100% !important;
+  }
+
+  .post_photo {
+    width: 48% !important;
+    margin: 0 1% !important;
+    box-sizing: border-box !important;
+  }
+
+  .photo_image_tag {
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
+  }
+
+  .photo-placeholder {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}

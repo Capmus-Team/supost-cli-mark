@@ -120,6 +120,23 @@ myapp/                              # repo root
 ├── configs/                        # example config files (committed to repo)
 │   └── config.yaml.example
 │
+├── api/                            # Vercel Go serverless handlers (backend deploy target)
+│   ├── health/
+│   │   └── index.go
+│   ├── categories/
+│   │   └── index.go
+│   ├── subcategories/
+│   │   └── index.go
+│   └── posts/
+│       └── index.go
+│
+├── frontend/                       # Next.js + TypeScript web frontend
+│   ├── app/                        # App Router pages/layout
+│   ├── components/                 # reusable UI building blocks
+│   ├── hooks/                      # client hooks
+│   ├── services/                   # API clients
+│   └── types/                      # shared frontend TypeScript types
+│
 └── testdata/                       # test fixtures, golden files, seed data
     ├── fixtures/
     └── seed/                       # JSON seed data for development

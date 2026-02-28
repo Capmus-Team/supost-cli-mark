@@ -1,288 +1,162 @@
-# supost
+# SUpost Full-Stack Prototype
 
-A university marketplace CLI that renders website-like terminal views on top of the live SUPost Supabase Postgres database. Browse the homepage, search listings, view posts, create new posts, and send response emails — all from your terminal.
+This repository now contains:
 
-Production stack (future): Supabase + Next.js. This CLI is the prototype: clean Go architecture today, easy port to TypeScript tomorrow.
+- Go backend (`supost serve`) exposing REST APIs
+- Next.js 16.1.6 + TypeScript frontend (`frontend/`) rendering the SUpost-style homepage
+- Supabase/Postgres integration through the Go repository layer
 
-## Quick Start
+## Architecture
 
-Works immediately with in-memory seed data — no database, no API keys, no Docker.
+### Backend (Go)
 
-```bash
-go run . version              # → v0.1.0
-go run . home                 # homepage
-go run . search --category 5  # search results
-go run . post seed-1          # view a post
-go run . serve                # preview HTTP server at localhost:8080
-```
+- Command layer: `cmd/`
+- Business logic: `internal/service/`
+- Domain contracts: `internal/domain/`
+- Data access adapters: `internal/repository/` (`inmemory` and `postgres`)
+- Vercel Functions handlers: `api/*/index.go`
 
-To connect to the real SUPost database:
+The backend API surface is the same for local server and Vercel functions:
 
-```bash
-cp .env.example .env          # fill in credentials
-go run . home                 # now renders live data
-```
+- `GET /api/categories`
+- `GET /api/subcategories?category_id=<id>`
+- `GET /api/posts?category_id=&subcategory_id=&status=&limit=&offset=`
+- `GET /api/health`
 
-For running the latest code without relying on a globally installed `supost` binary, see [Terminal Commands](docs/terminal_commands.md).
+All responses are JSON, with structured error envelopes for validation/internal failures.
 
-### Home Performance Notes
+### Frontend (Next.js App Router)
 
-- `go build -o bin/supost .` prints nothing on success.
-- For faster repeated runs, prefer `./bin/supost home` over `go run . home` (avoids compile-on-run overhead).
-- `home` caches:
-  - recent active posts
-  - per-category latest active-post timestamps (used by overview/category sidebar times)
-- Category/subcategory taxonomy comes from local seed data, not runtime DB category-table queries.
+`frontend/` includes:
 
-## Commands
+- `app/` page, layout, loading/error states
+- `components/` modular homepage sections
+- `services/` typed API client to Go backend
+- `types/` API response/domain types
+- `hooks/` UI helper hooks
 
-### Pages (read-only)
-
-```bash
-# Homepage
-supost home
-
-# Search results with filters + pagination
-supost search --category 5
-supost search --subcategory 14
-supost search --category 5 --page 2 --per-page 20
-
-# View a single post
-supost post 130031605
-
-# List categories (utility)
-supost categories
-```
-
-### Create a Post
-
-The `post create` command handles the full create-post wizard. Flags determine which step you're on:
-
-```bash
-# Step 1: choose category
-supost post create
-
-# Step 2: choose subcategory
-supost post create --category 8
-
-# Step 3: show form fields
-supost post create --category 5 --subcategory 14
-
-# Submit (all required fields present → validates + INSERTs + sends publish email)
-supost post create \
-  --category 5 \
-  --subcategory 14 \
-  --name "Red bike for sale" \
-  --body "Pick up on campus." \
-  --email "wientjes@alumni.stanford.edu" \
-  --price 100
-
-# Personals post (no price field for category 8)
-supost post create \
-  --category 8 \
-  --subcategory 130 \
-  --name "Missed connection" \
-  --body "Saw you at Coupa." \
-  --email "wientjes@cs.stanford.edu"
-
-# Dry run: validate + render email, no INSERT, no send
-supost post create \
-  --category 5 --subcategory 14 \
-  --name "Test" --body "Test" --email "test@stanford.edu" --price 50 \
-  --dry-run
-```
-
-### Respond to a Post
-
-```bash
-# Send a response email to the post owner (+ saves to messages table)
-supost post respond 130031783 \
-  --message "Hello, I want to buy your bike" \
-  --reply-to "gwientjes@gmail.com"
-
-# Dry run: validate + render email, don't send, don't persist
-supost post respond 130031783 \
-  --message "Test message" \
-  --reply-to "test@gmail.com" \
-  --dry-run
-```
-
-### Utility
-
-```bash
-supost version                # print version
-supost serve                  # preview HTTP server
-supost serve --port 3000      # custom port
-```
-
-## Command Reference
-
-```
-supost
-├── home                          # render homepage
-├── search                        # render search results page
-│     --category <id>
-│     --subcategory <id>
-│     --page <n>                  (default: 1)
-│     --per-page <n>              (default: 20)
-├── post <post_id>                # render single post page
-├── post create                   # create-post wizard / submit
-│     --category <id>
-│     --subcategory <id>
-│     --name <string>
-│     --body <string>
-│     --email <string>
-│     --price <amount>            (required for some categories)
-│     --dry-run                   (validate only, no write)
-├── post respond <post_id>        # send response email
-│     --message <string>          (required)
-│     --reply-to <email>          (required)
-│     --dry-run                   (validate only, no send)
-├── categories                    # list categories + subcategories
-├── serve                         # preview HTTP server
-│     --port <n>                  (default: 8080)
-└── version                       # print version
-```
-
-### Global Flags (available on all commands)
-
-```
---verbose, -v       enable verbose/debug output
---format <string>   output format: json, table, text (default: json)
---config <path>     config file (default: .supost.yaml)
-```
-
-## Project Structure
-
-```
-supost-cli/
-├── AGENTS.md                        # AI agent governance — read first
-├── main.go                          # entrypoint (wiring only)
-│
-├── cmd/                             # one file per command
-│   ├── root.go                      # global flags, config init
-│   ├── version.go                   # supost version
-│   ├── home.go                      # supost home
-│   ├── search.go                    # supost search
-│   ├── post.go                      # supost post <id>
-│   ├── post_create.go               # supost post create
-│   ├── post_respond.go              # supost post respond <id>
-│   ├── categories.go                # supost categories
-│   └── serve.go                     # supost serve
-│
-├── internal/
-│   ├── config/config.go             # centralized config (Viper)
-│   ├── domain/                      # types → Supabase tables
-│   │   ├── post.go                  # Post struct (json + db tags)
-│   │   ├── category.go              # Category, Subcategory
-│   │   ├── user.go                  # User / Profile
-│   │   ├── message.go               # Response messages
-│   │   └── errors.go                # domain errors (HTTP-mappable)
-│   ├── service/                     # business logic (the brain)
-│   │   ├── posts.go                 # Create, Validate, GetByID, Search
-│   │   ├── categories.go            # ListCategories, GetSubcategories
-│   │   ├── email.go                 # SendPublishLink, SendResponse
-│   │   └── home.go                  # HomepageData (posts + categories)
-│   ├── repository/                  # data access (swappable)
-│   │   ├── interfaces.go
-│   │   ├── inmemory.go              # zero-dep prototype adapter
-│   │   └── postgres.go              # real Supabase/Postgres adapter
-│   ├── adapters/                    # external services
-│   │   ├── output.go                # JSON/table/text rendering
-│   │   └── mailgun.go               # email sending
-│   └── util/
-│
-├── migrations/                      # SQL schema (Supabase-ready)
-├── configs/config.yaml.example
-├── testdata/seed/
-└── .env.example
-```
-
-## Create-Post Validation
-
-When submitting a post, the following rules apply:
-
-- **Email** is required and must be Stanford-affiliated:
-  - Any `*.stanford.edu` domain (e.g., `@stanford.edu`, `@cs.stanford.edu`, `@gsb.stanford.edu`)
-  - Also: `@stanfordalumni.org`, `@stanfordchildrens.org`, `@stanfordhealthcare.org`, `@stanfordmed.org`, `@lpch.org`
-- **Name** and **Body** are required
-- **Price** is category-dependent:
-  - Required for: for sale/wanted (5), housing offering (3)
-  - Not available for: personals (8), housing need (4), community (9), service offered (7), campus job (1), job off-campus (2)
-
-Validation errors follow the same format as the real site:
-
-```
-1 error prohibited this post from being saved
-There were problems with the following fields:
-
-Email must be a Stanford email (e.g., @stanford.edu, @cs.stanford.edu).
-```
-
-## Email Features (Mailgun)
-
-### Publish-Link Confirmation
-
-After successful post creation:
-- Generates a post `access_token`
-- Sends email with subject: `SUpost - Publish your post! <post name>`
-- Includes publish URL: `<SUPOST_BASE_URL>/post/publish/<access_token>`
-
-### Post Response
-
-When sending a response:
-- Sends email to the post owner's stored email
-- Sets `Reply-To` header to `--reply-to` address
-- Saves message to `app_private.message` table
+The homepage is rendered from modular React components and fetches data only from the Go API.
 
 ## Environment Variables
 
-```bash
-# Database (leave empty for in-memory prototype)
-DATABASE_URL=                       # read/write Postgres connection
-# DATABASE_READ_URL=                # optional: separate read-only connection
+### Backend (`.env`)
 
-# Supabase
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+Use `.env.example` at repo root:
 
-# Mailgun (required for email features)
-MAILGUN_DOMAIN=
-MAILGUN_API_KEY=
-MAILGUN_FROM_EMAIL=
-MAILGUN_API_BASE=                   # https://api.mailgun.net (US) or https://api.eu.mailgun.net (EU)
-MAILGUN_SEND_TIMEOUT=10s
+- `DATABASE_URL` (optional; if empty uses in-memory repository)
+- `PORT` (default 8080)
+- `CORS_ORIGINS` (comma-separated origins in addition to localhost:3000 defaults)
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY` (for shared config compatibility)
 
-# App
-SUPOST_BASE_URL=https://n.supost.com
-PORT=8080
-VERBOSE=false
-FORMAT=json
-```
+### Frontend (`frontend/.env.local`)
 
-## Development
+Use `frontend/.env.example`:
+
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`
+
+## Run Locally
+
+### 1. Backend
 
 ```bash
-cp .env.example .env
-cp configs/config.yaml.example .supost.yaml
-
-make check    # format, vet, build, test
-make build    # compile to bin/supost
-make test     # tests with race detector
-make serve    # preview HTTP server
-make clean
+go run . serve --port 8080
 ```
 
-## Migration to Production (Next.js + Supabase)
+### 2. Frontend
 
-1. **Schema** → Apply `migrations/*.sql` to Supabase, uncomment RLS policies
-2. **Types** → Translate `internal/domain/*.go` structs to TypeScript interfaces (`json` tags = field names)
-3. **Logic** → Port `internal/service/*.go` to Next.js API routes (nearly 1:1)
-4. **Data access** → Replace Go repository with Supabase JS SDK
-5. **Auth** → Replace CLI email validation with Supabase Auth + RLS
-6. **Seed data** → Import `testdata/seed/*.json` into Supabase
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
----
+Open `http://localhost:3000`.
 
-*Built with Cobra + clean Go architecture. See [AGENTS.md](AGENTS.md) for the full governance guide.*
+## Deploy To Vercel (Frontend + Backend)
+
+Deploy as **two Vercel projects** from the same repo.
+
+### 1. Backend Project (Vercel Functions)
+
+1. In Vercel, create a new project from this repo.
+2. Set **Root Directory** to repo root (`.`).
+3. Keep `vercel.json` at root (already added).
+4. Add environment variables:
+   - `DATABASE_URL` (Supabase Postgres connection string)
+   - `CORS_ORIGINS` (include your frontend Vercel URL, comma-separated if multiple)
+   - optional: `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+5. Deploy.
+
+Backend endpoints will be:
+
+- `https://<backend-project>.vercel.app/api/health`
+- `https://<backend-project>.vercel.app/api/categories`
+- `https://<backend-project>.vercel.app/api/subcategories?category_id=5`
+- `https://<backend-project>.vercel.app/api/posts?limit=20`
+
+### 2. Frontend Project (Next.js)
+
+1. Create a second Vercel project from the same repo.
+2. Set **Root Directory** to `frontend`.
+3. Add environment variable:
+   - `NEXT_PUBLIC_API_BASE_URL=https://<backend-project>.vercel.app`
+4. Deploy.
+
+The homepage will then call your Go backend API on Vercel.
+
+### 3. CORS Checklist
+
+- Ensure backend `CORS_ORIGINS` includes:
+  - `https://<frontend-project>.vercel.app`
+  - any custom domain you attach
+
+### 4. One-Command CLI Deploy
+
+Prerequisites:
+
+- Install Vercel CLI: `npm i -g vercel`
+- Run `vercel login` once (or set `VERCEL_TOKEN`)
+- Ensure both projects are already linked in Vercel (`vercel pull` handles this interactively first time)
+
+Deploy commands from repo root:
+
+```bash
+# backend only (repo root project)
+make deploy-backend
+
+# frontend only (frontend/ project)
+make deploy-frontend
+
+# both projects in sequence
+make deploy-all
+```
+
+Non-interactive CI usage:
+
+```bash
+make deploy-all VERCEL_TOKEN=your_token VERCEL_ENV=production
+```
+
+## Validation Commands
+
+Backend:
+
+```bash
+go build ./...
+go test ./...
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+```
+
+## Notes
+
+- If `DATABASE_URL` is set, backend reads from Supabase/Postgres.
+- If `DATABASE_URL` is empty, backend serves seed-backed in-memory data.
+- Frontend route `/` is intentionally dynamic (`force-dynamic`) so production builds do not require a live API at build time.
+- Local CLI server (`go run . serve`) and Vercel functions share the same service/repository business logic.
